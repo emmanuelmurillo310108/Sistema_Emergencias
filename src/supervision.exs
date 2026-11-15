@@ -7,7 +7,7 @@ defmodule Emergencia.Supervisor do
   @doc """
   Inicia el supervisor con nombre registrado.
   """
-  def start_link(_), do
+  def start_link(_) do
     Supervisor.start_link(__MODULE__, :ok, name: __MODULE__)
   end
 

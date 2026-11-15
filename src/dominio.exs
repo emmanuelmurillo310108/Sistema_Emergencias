@@ -31,7 +31,7 @@ defmodule Emergencia.Dominio do
   """
   def recorrer_personas([]), do: 0
 
-  def recorrer_personas([persona | resto]), do
+  def recorrer_personas([persona | resto]) do
     (if persona.estado == :localizada, do: 1, else: 0) + recorrer_personas(resto)
   end
 

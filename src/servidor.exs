@@ -78,7 +78,8 @@ defmodule Emergencia.Servidor do
          %{cantidad: disponible} = recurso <- Map.get(estado.recursos, recurso_id),
          true <- cantidad <= disponible do
       recursos = Map.put(estado.recursos, recurso_id, %{recurso | cantidad: disponible - cantidad})
-      necesidades = Map.put(estado.necesidades, necesidad_id, %{necesidad | estado: :asignada, recurso: recurso_id})
+      actualizada = necesidad |> Map.put(:estado, :asignada) |> Map.put(:recurso, recurso_id)
+      necesidades = Map.put(estado.necesidades, necesidad_id, actualizada)
       responder({:ok, :asignada}, %{estado | recursos: recursos, necesidades: necesidades})
     else
       {:error, motivo} -> {:reply, {:error, motivo}, estado}
@@ -118,7 +119,7 @@ defmodule Emergencia.Servidor do
   end
 
   def handle_call({:mascota, id, tipo, especie, nombre, color, tamano, zona, contacto}, _from, estado) do
-    mascota = %{id: id, tipo: tipo, especie: especie, nombre: nombre, color: color, tamano: tamano, zona: zona, contacto: contacto, estado: :activa}
+    mascota = %{id: id, tipo: tipo, especie: especie, nombre: nombre, color: color, tamano: tamano, zona: zona, contacto: contacto, estado: :activa, coincidencia: nil}
     responder({:ok, id}, %{estado | mascotas: Map.put(estado.mascotas, id, mascota)})
   end
 
@@ -126,7 +127,9 @@ defmodule Emergencia.Servidor do
     with %{estado: :activa} = a <- Map.get(estado.mascotas, id),
          %{estado: :activa} = b <- Map.get(estado.mascotas, otro_id),
          true <- a.tipo != b.tipo do
-      mascotas = estado.mascotas |> Map.put(id, %{a | estado: :resuelta, coincidencia: otro_id}) |> Map.put(otro_id, %{b | estado: :resuelta, coincidencia: id})
+      a = a |> Map.put(:estado, :resuelta) |> Map.put(:coincidencia, otro_id)
+      b = b |> Map.put(:estado, :resuelta) |> Map.put(:coincidencia, id)
+      mascotas = estado.mascotas |> Map.put(id, a) |> Map.put(otro_id, b)
       responder(:ok, %{estado | mascotas: mascotas})
     else
       _ -> {:reply, {:error, :coincidencia_invalida}, estado}
@@ -134,9 +137,12 @@ defmodule Emergencia.Servidor do
   end
 
   def handle_call({:coincidencias, id}, _from, estado) do
-    mascota = Map.get(estado.mascotas, id)
-    resultados = Enum.filter(estado.mascotas, fn {otro_id, otro} -> otro_id != id and otro.tipo != mascota.tipo and otro.estado == :activa and Dominio.puntaje(mascota, otro) >= 3 end)
-    {:reply, resultados, estado}
+    case Map.get(estado.mascotas, id) do
+      nil -> {:reply, {:error, :no_encontrada}, estado}
+      mascota ->
+        resultados = Enum.filter(estado.mascotas, fn {otro_id, otro} -> otro_id != id and otro.tipo != mascota.tipo and otro.estado == :activa and Dominio.puntaje(mascota, otro) >= 3 end)
+        {:reply, resultados, estado}
+    end
   end
 
   def handle_call({:albergue, id, nombre, zona, capacidad}, _from, estado) do
@@ -176,9 +182,7 @@ defmodule Emergencia.Servidor do
     {:reply, resumen, estado}
   end
 
-  @doc """
-  Guarda el nuevo estado y construye la respuesta esperada por GenServer.
-  """
+  # Guarda el nuevo estado antes de devolver la respuesta.
   defp responder(respuesta, estado) do
     :ok = Persistencia.guardar(estado)
     {:reply, respuesta, estado}

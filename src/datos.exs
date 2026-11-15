@@ -21,7 +21,7 @@ defmodule Emergencia.Datos do
   Construye una necesidad nueva con estado pendiente.
   """
   def necesidad(id, tipo, cantidad, prioridad, zona, descripcion, usuario) do
-    %{id: id, tipo: tipo, cantidad: cantidad, prioridad: prioridad, zona: zona, descripcion: descripcion, responsable: usuario, estado: :pendiente}
+    %{id: id, tipo: tipo, cantidad: cantidad, prioridad: prioridad, zona: zona, descripcion: descripcion, responsable: usuario, estado: :pendiente, recurso: nil}
   end
 
   @doc """

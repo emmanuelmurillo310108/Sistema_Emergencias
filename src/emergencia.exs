@@ -9,7 +9,12 @@ defmodule Emergencia do
   Inicia el supervisor que mantiene el servidor de la aplicación.
   """
   def iniciar do
-    Emergencia.Supervisor.start_link([])
+    case Emergencia.Supervisor.start_link([]) do
+      {:ok, pid} ->
+        Process.unlink(pid)
+        {:ok, pid}
+      error -> error
+    end
   end
 
   @doc """
