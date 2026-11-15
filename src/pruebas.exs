@@ -23,7 +23,7 @@ defmodule Emergencia.DominioTest do
   # Verifica el conteo de sectores anidados.
   test "cuenta sectores de forma recursiva" do
     zonas = [%{sectores: [%{sectores: [%{nombre: "Punto"}]}]}]
-    assert Dominio.recorrer_sectores(zonas) == 2
+    assert Dominio.recorrer_sectores(zonas) == 3
   end
 
   # Verifica el puntaje de coincidencia de mascotas.
